@@ -1,0 +1,90 @@
+---
+title: "Introduction to eartquake data"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Intro and cleaning data
+After downloading and reading in the dataset, the overall task clean the data. We can use eq_clean_data() for that.
+
+```{r}
+library(readr)
+library(dplyr)
+library(capstone)
+load(system.file("extdata", "df.rda", package = "capstone"))
+head(df)
+```
+
+We add a new column with dates and change lon and lat to numeric format. Look at how we handle BC years!
+
+```{r}
+df_clean = eq_clean_data(df)
+head(df_clean %>% select(YEAR, LONGITUDE, LATITUDE, DATE))
+```
+
+We also need to shorten location names with eq_location_clean. Location names will be used further for building leaflet maps. 
+
+```{r}
+df_clean = eq_location_clean(df_clean)
+df_clean$LOCATION_NAME[1:10]
+```
+
+
+## Plotting timelines
+
+We now have two new geoms that can be used in conjunction with the ggplot2 package to visualize some of the information in the NOAA earthquakes dataset. In particular, we would like to visualize the times at which earthquakes occur within certain countries. In addition to showing the dates on which the earthquakes occur, we can also show the magnitudes (i.e. Richter scale value) and the number of deaths associated with each earthquake.
+
+You can use geom_timeline() for plotting a time line of earthquakes ranging from xmin to xmaxdates with a point for each earthquake. 
+
+```{r}
+library(ggplot2)
+df_clean %>% filter(COUNTRY %in% c("RUSSIA", "ISRAEL")) %>% 
+  ggplot(aes(x = DATE, size = EQ_PRIMARY, y = COUNTRY, col= DEATHS)) + 
+  geom_timeline() + 
+  scale_size_continuous(name = 'Richter scale value') +
+  scale_color_continuous(name = '# deaths')
+```
+
+ 
+You can also annotate top-n earthquakes by magnitude with geom_timeline_label
+
+```{r}
+df_clean %>% filter(COUNTRY %in% c("RUSSIA", "ISRAEL"), YEAR > 1850) %>% 
+  ggplot(aes(x = DATE, size = EQ_PRIMARY, y = COUNTRY, col = DEATHS)) + 
+  geom_timeline() + 
+  scale_size_continuous(name = 'Richter scale value') +
+  scale_color_continuous(name = '# deaths')+
+  geom_timeline_label(aes(label=LOCATION_NAME), n_max=2) 
+```
+
+
+
+## Interactive maps with leaflet
+
+The eq_map() function maps the epicenters (LATITUDE/LONGITUDE) and annotates each point in a pop-up window containing annotation data stored in a column of the data frame. Each earthquake is shown with a circle, and the radius of the circle is proportional to the earthquake's magnitude.
+
+```{r}
+df_clean %>%
+  dplyr::filter(COUNTRY == "MEXICO" & YEAR >= 2000) %>% 
+  eq_map(annot_col = "DATE")
+```
+
+You can also print more useful annotations with eq_create_label() function. This function takes cleaned dataframe as an argument and creates an HTML label that can be used as the annotation text in a leaflet map created by eq_map().
+
+```{r}
+df %>%
+  dplyr::filter(COUNTRY == "IRAN" & YEAR >= 2016) %>% 
+  dplyr::mutate(popup_text = eq_create_label(.)) %>% 
+  eq_map(annot_col = "popup_text")
+```

@@ -1,0 +1,16 @@
+Package: capstone
+Type: Package
+Title: Analyzing NOAA earthquake dataset
+Version: 0.1.0
+Author: Ryan Honomichl
+Maintainer: Ryan Honomichl <ryandh288@gmail.com>
+Description: The earthquake package provides data cleaning, timeline plotting, and leaflet plotting for NOAA earthquake datasets.
+License: CC0
+Encoding: UTF-8
+LazyData: true
+Imports: dplyr, ggplot2, leaflet, lubridate, magrittr, readr, stringr
+Suggests: knitr,
+    rmarkdown,
+    testthat
+VignetteBuilder: knitr
+RoxygenNote: 7.0.0
